@@ -7,20 +7,17 @@ import (
 	"os"
 	"strings"
 	"time"
+
 	"github.com/eiannone/keyboard"
 )
 
 type Item struct {
 	Name string
 	Date time.Time
-	Tags string
+	Tags []string
 	Link string
 }
 
-//замена "/" на ", " в тегах
-func(t *Item) exchangeLet(){
-	t.Tags = strings.ReplaceAll(t.Tags, "/", ", ")
-}
 
 func main() {
 	defer func() {
@@ -61,13 +58,17 @@ OuterLoop:
 				fmt.Println("Введите правильный аргументы в формате url описание теги")
 				continue OuterLoop
 			}
+			if err := chekTags(args[2:]); !err {
+				fmt.Println("Теги должны начинатся со знака '#' и иметь после знача каку-либо информацию!")
+				continue OuterLoop
+			}
 			adres := Item{
-				Name: args[1],
+				Name: strings.ToLower(args[1]),
 				Date: time.Now(),
-				Tags: args[len(args)-1],
+				Tags: args[2:],
 				Link: args[0],
 			}
-			adres.exchangeLet()
+
 			listItem = append(listItem, &adres)
 			continue OuterLoop
 		case 'l':
@@ -79,7 +80,12 @@ OuterLoop:
 			// Дата: <дата>
 			for _, v := range listItem {
 				year, month, day := v.Date.Date()
-				fmt.Printf("\nИмя: %s\nURL: %s\nТеги: %v\nДата: %d %v %d\n\n", v.Name, v.Link, v.Tags, year, month, day)
+				fmt.Printf("\nИмя: %s\nURL: %s\nТеги: ", v.Name, v.Link)
+				for i := 0; i < len(v.Tags)-1; i++ {
+					fmt.Printf("%s, ", v.Tags[i])
+				}
+				fmt.Printf("%s", v.Tags[len(v.Tags)-1])
+				fmt.Printf("\nДата: %d %v %d\n\n", year, month, day)
 			}
 		case 'r':
 			if err := keyboard.Close(); err != nil {
@@ -91,6 +97,7 @@ OuterLoop:
 			reader := bufio.NewReader(os.Stdin)
 			text, _ := reader.ReadString('\n')
 			text = strings.TrimSpace(text)//убрал \n в кенце строки
+			text = strings.ToLower(text)
 			for ind, v := range listItem {
 				if v.Name == text {
 					listItem[ind] = listItem[len(listItem)-1]
@@ -114,4 +121,13 @@ func help() {
 		"a - Добавление нового url в список хранения\n" +
 		"l - Просмотр существующих url\n" +
 		"r - Удаление url из списка хранения")
+}
+
+func chekTags(tags []string) bool{
+	for _, v := range tags {
+		if (v[0] != '#' || len(v)<2){
+			return false
+		}
+	}
+	return true
 }
